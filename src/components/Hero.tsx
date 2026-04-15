@@ -1,20 +1,23 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
 
 export default function Hero() {
   return (
     <section className="relative h-screen w-full overflow-hidden bg-black">
-      {/* Image Background (Temporary while waiting for video) */}
-      <Image
-        src="/SMA.jpeg"
-        alt="Parroquia de San Miguel Arcángel"
-        fill
-        priority
+      {/* Video Background */}
+      <video
+        autoPlay
+        muted
+        playsInline
         className="absolute top-0 left-0 h-full w-full object-cover"
-        quality={100}
-      />
+      >
+        <source
+          src="/CasaCincoDeMayoLanding.mp4"
+          type="video/mp4"
+        />
+        Your browser does not support the video tag.
+      </video>
 
       {/* Overlay */}
       <div className="absolute top-0 left-0 h-full w-full bg-black/40" />
