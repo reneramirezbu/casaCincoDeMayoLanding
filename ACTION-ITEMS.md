@@ -62,23 +62,23 @@ resolves inbound bookings by `externalRoomId` against those mappings.
 
 ---
 
-## (c) Database — P1 — *swap SQLite → Neon Postgres*
+## (c) Database — Postgres wired ✅ — *provision a Neon/Vercel Postgres + set DATABASE_URL*
 
-**What:** Move off the local SQLite dev file to a hosted Postgres (Neon).
+**Status: DONE in code.** The app now runs on **Postgres** via `@prisma/adapter-pg`
+(schema `provider = "postgresql"`; adapter in `src/lib/db.ts`). The local-SQLite driver has
+been removed. Verified end-to-end against a real Postgres (build + direct booking + inbound
+OTA webhook decrementing the shared pool + oversell → 409). The anti-oversell guarantee holds
+via the row lock the conditional `UPDATE ... WHERE available > 0` acquires.
 
-**Why:** SQLite (`file:./dev.db`) is single-file local dev only; it will not survive a
-serverless deploy or concurrent production traffic. The anti-oversell design already uses
-transactional `BEGIN IMMEDIATE` semantics — Postgres provides equivalent row-locking at scale.
+**Your remaining action — required for the deploy to actually run:**
+- **On Vercel:** Project → **Storage → Create Database → Postgres (Neon)**. Vercel injects
+  `DATABASE_URL` automatically — use the **pooled** URL for serverless. Then redeploy.
+- **One-time schema + seed** against the new DB (from your machine, with the Neon URL in
+  `.env`): `npm run db:push && npm run seed`.
+- **Local dev:** create a free Neon project and put its pooled URL in `.env` as `DATABASE_URL`
+  (there is no more zero-config SQLite file).
 
-**Where in code:**
-- `prisma/schema.prisma`: change `datasource.provider` from `sqlite` to `postgresql`.
-- `src/lib/db.ts`: replace the `PrismaNodeSqlite` driver adapter with `@prisma/adapter-pg`
-  (per the DATA manifest, *only this file changes* at runtime). Note: `@prisma/adapter-pg`
-  is **not yet installed** — it must be added when npm install is permitted.
-- `prisma.config.ts`: `datasource.url` already reads `env("DATABASE_URL")` — no change.
-- Run `npx prisma db push` (or a real migration) + `npm run seed` against the new DB.
-
-**Env var:** `DATABASE_URL` (from `file:./dev.db` → the Neon connection string).
+**Env var:** `DATABASE_URL` — a **pooled** Postgres connection string. See `.env.example`.
 
 ---
 

@@ -15,16 +15,11 @@
  * also clears reservations — do not run against production data.
  */
 
+// MUST be first: loads .env before db.ts reads process.env.DATABASE_URL.
+import "./load-env";
 import { db } from "@/lib/db";
 import { Channel } from "@/generated/prisma/client";
 import { addDaysUTC, toUTCMidnight } from "@/lib/dates";
-
-// Load .env if present so DATABASE_URL / CHANNEL_ADAPTER are available under tsx.
-try {
-  process.loadEnvFile();
-} catch {
-  // fine — defaults apply.
-}
 
 // ── PLACEHOLDER configuration ────────────────────────────────────────────────
 // Room types must total 15 physical rooms (Casa Cinco de Mayo has 15 rooms).

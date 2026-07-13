@@ -5,18 +5,22 @@ It sells one shared inventory pool across Airbnb, Booking.com, Expedia, and a di
 booking site so a room can never double-book.
 
 Stack: **Next.js 16.2.3** (App Router, Turbopack) · **React 19** · **TypeScript strict** ·
-**Tailwind CSS v4** (CSS-first, no `tailwind.config.js`) · **Prisma 7.8** with a
-**SQLite** dev DB via a custom `node:sqlite` driver adapter.
+**Tailwind CSS v4** (CSS-first, no `tailwind.config.js`) · **Prisma 7.8** on
+**Postgres** (Neon / Vercel Postgres) via the `@prisma/adapter-pg` driver adapter.
 
 ---
 
 ## Run it locally
 
 ```bash
+# 0. Point DATABASE_URL (in .env) at a Postgres connection string. Easiest:
+#    create a free Neon project (neon.tech) and paste its POOLED URL.
+#    There is no SQLite file — the app runs on Postgres locally and in prod.
+
 # 1. Generate the Prisma 7 client (outputs to src/generated/prisma)
 npx prisma generate
 
-# 2. Create + migrate the SQLite schema (creates ./dev.db)
+# 2. Create the schema in your Postgres database
 npm run db:push
 
 # 3. Seed structural/config data (property, 3 PLACEHOLDER room types = 15 rooms,
@@ -48,16 +52,34 @@ To reset the dev DB at any time: `npm run db:push` then `npm run seed`.
 
 ---
 
+## Deploy to Vercel
+
+1. **Import** the GitHub repo into Vercel (Next.js is auto-detected).
+2. **Add a database:** Vercel project → **Storage → Create Database → Postgres (Neon)**. This
+   injects `DATABASE_URL` automatically — use the **pooled** URL (serverless opens many
+   short-lived connections).
+3. **The build already runs `prisma generate`** (`"build": "prisma generate && next build"` plus
+   a `postinstall` hook), so the client is generated on Vercel. *(Missing this was the original
+   deploy failure — now fixed.)*
+4. **Create the schema + seed once** against the new DB, from your machine with the Neon URL in
+   `.env`: `npm run db:push && npm run seed`. (Vercel's build does not run migrations or the seed.)
+5. **Redeploy.** `/`, `/book`, and `/dashboard` will render against Postgres.
+
+> Gate `/dashboard` behind auth before exposing it publicly — see ACTION-ITEMS.md (d).
+
+---
+
 ## Architecture (the ~10-line version)
 
 1. **Shared inventory pool = anti-oversell.** There is exactly **one** `InventoryDay` row
    per `(roomTypeId, date)`. Every channel — direct, Airbnb, Booking, Expedia — decrements
    that same row. A room cannot be sold twice because there is only one pool to sell from.
 2. **Atomic holds.** `holdInventory` (in `src/lib/inventory.ts`) runs inside an interactive
-   transaction; the SQLite adapter opens each with `BEGIN IMMEDIATE` (write lock) and serializes
-   overlapping transactions. Each night is decremented with a conditional `updateMany`
-   (`available > 0`), so the pool can never go negative; any sold-out night throws
-   `OversellError` and rolls back **all** nights (no partial bookings).
+   transaction. Each night is decremented with a conditional `updateMany` (`available > 0`),
+   which acquires a Postgres row lock so two racing bookings can't both take the last unit — the
+   pool can never go negative. Any sold-out night throws `OversellError` and rolls back **all**
+   nights (no partial bookings). Verified end-to-end: a direct booking and an inbound OTA webhook
+   decrement the same pool, and the 5th booking of a 4-room night returns 409.
 3. **Aggregator-adapter pattern.** All OTA I/O goes through the `ChannelAdapter` interface
    (`src/lib/channels/types.ts`). Today the only implementation is `MockChannelAdapter`
    (`src/lib/channels/mock.ts`) — it logs to `SyncLog` + console and **never invents

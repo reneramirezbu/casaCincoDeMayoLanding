@@ -1,5 +1,5 @@
 // Casa Cinco de Mayo — Channel Manager
-// Data & Sync core schema. SQLite for local MVP (swap for Postgres in prod).
+// Data & Sync core schema. Postgres (Neon / Vercel Postgres) via @prisma/adapter-pg.
 //
 // CONCURRENCY / ANTI-DOUBLE-BOOKING MODEL:
 //   The single source of truth for "can we sell this night?" is InventoryDay.
@@ -17,9 +17,10 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   // Prisma 7: the connection URL lives in prisma.config.ts (datasource.url) for
   // the CLI, and the runtime client connects via a driver adapter (src/lib/db.ts).
+  // DATABASE_URL should be a POOLED Postgres string (Neon / Vercel Postgres).
 }
 
 // ─────────────────────────────────────────────────────────────
