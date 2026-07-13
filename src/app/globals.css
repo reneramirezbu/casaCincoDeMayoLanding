@@ -24,3 +24,234 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/* ------------------------------------------------------------------------
+   Casa Cinco de Mayo — Channel Manager design tokens (appended, additive).
+   Everything above this line belongs to the marketing landing page and is
+   intentionally untouched. Tokens below power src/components/ui and
+   src/components/shell. Palette: warm San Miguel neutrals ("sand"), one
+   terracotta accent ("clay"), agave green for success/direct.
+   ------------------------------------------------------------------------ */
+
+:root {
+  /* Motion — strong custom curves (Emil Kowalski). Weak CSS defaults are
+     also overridden for Tailwind's ease-out / ease-in-out utilities below. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 240ms;
+  --dur-overlay: 260ms;
+
+  /* Warm neutral ramp — "sand" (static, does not flip in dark mode) */
+  --sand-50: #faf7f2;
+  --sand-100: #f3eee5;
+  --sand-200: #e8dfd0;
+  --sand-300: #d8cbb6;
+  --sand-400: #bda98c;
+  --sand-500: #a08a6b;
+  --sand-600: #837055;
+  --sand-700: #675845;
+  --sand-800: #4b4033;
+  --sand-900: #342d24;
+  --sand-950: #1d1812;
+
+  /* Terracotta accent ramp — "clay" (static) */
+  --clay-50: #fbf4f0;
+  --clay-100: #f6e4da;
+  --clay-200: #ecc9b7;
+  --clay-300: #dfa98d;
+  --clay-400: #ce8260;
+  --clay-500: #bc6742;
+  --clay-600: #a9542f;
+  --clay-700: #8c4527;
+  --clay-800: #703921;
+  --clay-900: #5c2f1d;
+  --clay-950: #33180e;
+
+  /* Agave green ramp (static) */
+  --agave-50: #f2f7f2;
+  --agave-100: #e2ede3;
+  --agave-200: #c6dbc9;
+  --agave-300: #a0c0a6;
+  --agave-400: #74a07e;
+  --agave-500: #52815d;
+  --agave-600: #41694c;
+  --agave-700: #35543e;
+  --agave-800: #2b4232;
+  --agave-900: #223428;
+  --agave-950: #101b13;
+
+  /* Semantic tokens — LIGHT */
+  --surface: var(--sand-50);
+  --surface-raised: #ffffff;
+  --surface-sunken: #f1ebdf;
+  --surface-overlay: #ffffff;
+  --ink: #2b2118;
+  --ink-muted: #6b5d4c;
+  --ink-faint: #9a8b7a;
+  --edge: #e7dfd1;
+  --edge-strong: #d5c8b4;
+  --scrim: rgb(28 19 12 / 0.4);
+
+  --accent: var(--clay-600);
+  --accent-hover: var(--clay-700);
+  --accent-soft: var(--clay-100);
+  --on-accent: #fdfbf9;
+  --ring: var(--clay-600);
+
+  --success: var(--agave-600);
+  --success-soft: var(--agave-100);
+  --warning: #855c0b;
+  --warning-soft: #f5ead0;
+  --danger: #a83a2a;
+  --danger-hover: #8f3123;
+  --danger-soft: #f8e2de;
+
+  /* Channel identities — muted, brand-adjacent */
+  --channel-airbnb: #b34a50;
+  --channel-airbnb-soft: #f8e2e3;
+  --channel-booking: #1f63a8;
+  --channel-booking-soft: #e0ecf7;
+  --channel-expedia: #46508c;
+  --channel-expedia-soft: #e7e9f4;
+  --channel-direct: var(--agave-600);
+  --channel-direct-soft: var(--agave-100);
+
+  /* Warm-tinted shadows */
+  --shadow-card: 0 1px 2px rgb(43 33 24 / 0.05), 0 1px 1px rgb(43 33 24 / 0.03);
+  --shadow-raised: 0 1px 2px rgb(43 33 24 / 0.06), 0 4px 12px -2px rgb(43 33 24 / 0.08);
+  --shadow-overlay: 0 4px 12px rgb(28 19 12 / 0.08), 0 16px 40px -8px rgb(28 19 12 / 0.22);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Semantic tokens — DARK (warm near-black, candlelit clay) */
+    --surface: #171310;
+    --surface-raised: #201b16;
+    --surface-sunken: #100d0a;
+    --surface-overlay: #262019;
+    --ink: #efe8dd;
+    --ink-muted: #b3a693;
+    --ink-faint: #837663;
+    --edge: #322b21;
+    --edge-strong: #473d2f;
+    --scrim: rgb(0 0 0 / 0.55);
+
+    --accent: var(--clay-400);
+    --accent-hover: var(--clay-300);
+    --accent-soft: #3a2517;
+    --on-accent: #2a1509;
+    --ring: var(--clay-400);
+
+    --success: #8fb399;
+    --success-soft: #1e2d23;
+    --warning: #d6ad55;
+    --warning-soft: #342a12;
+    --danger: #db8474;
+    --danger-hover: #e59d8f;
+    --danger-soft: #3b1d17;
+
+    --channel-airbnb: #e08a8e;
+    --channel-airbnb-soft: #3a2022;
+    --channel-booking: #82b3e4;
+    --channel-booking-soft: #16283a;
+    --channel-expedia: #a3abdc;
+    --channel-expedia-soft: #232841;
+    --channel-direct: #8fb399;
+    --channel-direct-soft: #1e2d23;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.45), 0 4px 14px -2px rgb(0 0 0 / 0.5);
+    --shadow-overlay: 0 8px 20px rgb(0 0 0 / 0.4), 0 24px 48px -8px rgb(0 0 0 / 0.6);
+  }
+}
+
+@theme inline {
+  /* Semantic colors → bg-surface, text-ink, border-edge, bg-accent, ... */
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-edge: var(--edge);
+  --color-edge-strong: var(--edge-strong);
+  --color-scrim: var(--scrim);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-soft: var(--danger-soft);
+  --color-channel-airbnb: var(--channel-airbnb);
+  --color-channel-airbnb-soft: var(--channel-airbnb-soft);
+  --color-channel-booking: var(--channel-booking);
+  --color-channel-booking-soft: var(--channel-booking-soft);
+  --color-channel-expedia: var(--channel-expedia);
+  --color-channel-expedia-soft: var(--channel-expedia-soft);
+  --color-channel-direct: var(--channel-direct);
+  --color-channel-direct-soft: var(--channel-direct-soft);
+
+  /* Raw ramps → bg-clay-600, text-sand-500, bg-agave-100, ... */
+  --color-sand-50: var(--sand-50);
+  --color-sand-100: var(--sand-100);
+  --color-sand-200: var(--sand-200);
+  --color-sand-300: var(--sand-300);
+  --color-sand-400: var(--sand-400);
+  --color-sand-500: var(--sand-500);
+  --color-sand-600: var(--sand-600);
+  --color-sand-700: var(--sand-700);
+  --color-sand-800: var(--sand-800);
+  --color-sand-900: var(--sand-900);
+  --color-sand-950: var(--sand-950);
+  --color-clay-50: var(--clay-50);
+  --color-clay-100: var(--clay-100);
+  --color-clay-200: var(--clay-200);
+  --color-clay-300: var(--clay-300);
+  --color-clay-400: var(--clay-400);
+  --color-clay-500: var(--clay-500);
+  --color-clay-600: var(--clay-600);
+  --color-clay-700: var(--clay-700);
+  --color-clay-800: var(--clay-800);
+  --color-clay-900: var(--clay-900);
+  --color-clay-950: var(--clay-950);
+  --color-agave-50: var(--agave-50);
+  --color-agave-100: var(--agave-100);
+  --color-agave-200: var(--agave-200);
+  --color-agave-300: var(--agave-300);
+  --color-agave-400: var(--agave-400);
+  --color-agave-500: var(--agave-500);
+  --color-agave-600: var(--agave-600);
+  --color-agave-700: var(--agave-700);
+  --color-agave-800: var(--agave-800);
+  --color-agave-900: var(--agave-900);
+  --color-agave-950: var(--agave-950);
+
+  /* Radius → rounded-field (inputs/buttons), rounded-card (cards/dialogs) */
+  --radius-field: 0.625rem;
+  --radius-card: 0.875rem;
+
+  /* Layout spacing → w-sidebar, pl-sidebar, h-topbar, ... */
+  --spacing-sidebar: 16rem;
+  --spacing-topbar: 3.5rem;
+
+  /* Shadows → shadow-card, shadow-raised, shadow-overlay (theme-aware) */
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-overlay: var(--shadow-overlay);
+
+  /* Easing → ease-out / ease-in-out utilities now use the strong curves;
+     ease-drawer is new (iOS-style sheet curve) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}

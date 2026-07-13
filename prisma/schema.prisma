@@ -1,0 +1,191 @@
+// Casa Cinco de Mayo — Channel Manager
+// Data & Sync core schema. SQLite for local MVP (swap for Postgres in prod).
+//
+// CONCURRENCY / ANTI-DOUBLE-BOOKING MODEL:
+//   The single source of truth for "can we sell this night?" is InventoryDay.
+//   There is exactly ONE InventoryDay row per (roomTypeId, date). Its `available`
+//   column is the SHARED POOL that every channel (Direct/Airbnb/Booking/Expedia)
+//   sells from. Any booking — no matter which channel it arrives on — decrements
+//   the SAME rows inside a serialized interactive transaction, so a night can
+//   never be sold twice. See src/lib/inventory.ts for the guarantee.
+
+generator client {
+  provider = "prisma-client-js"
+  // Prisma 7: emit the client into the source tree so it is importable via the
+  // @/* path alias and versioned with the app. src/lib/db.ts imports from here.
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  // Prisma 7: the connection URL lives in prisma.config.ts (datasource.url) for
+  // the CLI, and the runtime client connects via a driver adapter (src/lib/db.ts).
+}
+
+// ─────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────
+
+enum Channel {
+  DIRECT
+  AIRBNB
+  BOOKING
+  EXPEDIA
+}
+
+enum ReservationStatus {
+  HELD
+  CONFIRMED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  PAY_AT_PROPERTY
+}
+
+// ─────────────────────────────────────────────────────────────
+// Core property structure
+// ─────────────────────────────────────────────────────────────
+
+model Property {
+  id        String     @id @default(cuid())
+  name      String
+  timezone  String     @default("America/Mexico_City")
+  currency  String     @default("MXN")
+  createdAt DateTime   @default(now())
+  roomTypes RoomType[]
+}
+
+model RoomType {
+  id          String @id @default(cuid())
+  propertyId  String
+  name        String
+  description String @default("")
+  occupancy   Int    @default(2)
+
+  property       Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  rooms          Room[]
+  ratePlans      RatePlan[]
+  inventoryDays  InventoryDay[]
+  channelMaps    ChannelMapping[]
+  reservations   Reservation[]
+
+  @@index([propertyId])
+}
+
+model Room {
+  id         String   @id @default(cuid())
+  roomTypeId String
+  label      String
+  roomType   RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  @@index([roomTypeId])
+}
+
+model RatePlan {
+  id         String   @id @default(cuid())
+  roomTypeId String
+  name       String
+  roomType   RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  rateCalendar RateCalendar[]
+  channelMaps  ChannelMapping[]
+  reservations Reservation[]
+
+  @@index([roomTypeId])
+}
+
+// One row per (ratePlan, date). priceCents is INTEGER centavos (MXN) — never a float.
+model RateCalendar {
+  id         String   @id @default(cuid())
+  ratePlanId String
+  date       DateTime // stored at UTC midnight; represents a single calendar night
+  priceCents Int // integer centavos MXN
+  minStay    Int? // optional minimum length of stay for this night
+  closed     Boolean  @default(false) // closed-to-arrival / stop-sell flag
+
+  ratePlan RatePlan @relation(fields: [ratePlanId], references: [id], onDelete: Cascade)
+
+  @@unique([ratePlanId, date])
+  @@index([ratePlanId, date])
+}
+
+// THE SHARED POOL. One row per (roomTypeId, date). `available` is decremented
+// atomically by ANY booking from ANY channel. This is the anti-oversell ledger.
+model InventoryDay {
+  id         String   @id @default(cuid())
+  roomTypeId String
+  date       DateTime // UTC midnight; one calendar night
+  available  Int // remaining sellable units for this night across ALL channels
+
+  roomType RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([roomTypeId, date])
+  @@index([roomTypeId, date])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Channel connectivity
+// ─────────────────────────────────────────────────────────────
+
+// Maps an internal (roomType, ratePlan) to an OTA's external identifiers.
+// externalRoomId / externalRateId are PLACEHOLDER ids until a real connectivity
+// provider (Channex / NextPax) issues them — see ACTION-ITEMS.md.
+model ChannelMapping {
+  id             String  @id @default(cuid())
+  channel        Channel
+  roomTypeId     String
+  ratePlanId     String
+  externalRoomId String
+  externalRateId String
+
+  roomType RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  ratePlan RatePlan @relation(fields: [ratePlanId], references: [id], onDelete: Cascade)
+
+  @@unique([channel, roomTypeId, ratePlanId])
+  @@index([channel])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Reservations & sync audit
+// ─────────────────────────────────────────────────────────────
+
+model Reservation {
+  id            String            @id @default(cuid())
+  code          String            @unique // human-facing confirmation code
+  channel       Channel
+  roomTypeId    String
+  ratePlanId    String
+  checkIn       DateTime // UTC midnight of arrival night
+  checkOut      DateTime // UTC midnight of departure day (exclusive)
+  guestName     String
+  guestEmail    String?
+  guestPhone    String?
+  adults        Int               @default(1)
+  totalCents    Int // integer centavos MXN
+  status        ReservationStatus @default(HELD)
+  paymentStatus PaymentStatus     @default(UNPAID)
+  externalRef   String? // OTA reservation reference, if it originated on a channel
+  createdAt     DateTime          @default(now())
+
+  roomType RoomType @relation(fields: [roomTypeId], references: [id])
+  ratePlan RatePlan @relation(fields: [ratePlanId], references: [id])
+
+  @@index([roomTypeId, checkIn])
+  @@index([channel])
+  @@index([status])
+}
+
+// Append-only audit trail of every push/ingest to/from a channel.
+model SyncLog {
+  id        String   @id @default(cuid())
+  channel   Channel
+  action    String // e.g. "pushAvailability", "ingestBooking", "pushRates"
+  payload   String // JSON-serialized payload for debugging/replay
+  status    String // "ok" | "error"
+  createdAt DateTime @default(now())
+
+  @@index([channel, createdAt])
+}
